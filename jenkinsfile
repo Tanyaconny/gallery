@@ -1,0 +1,43 @@
+pipeline{
+    agent any
+    tools{
+        nodejs "nodejs-19"
+    }
+    stages{
+        stage('clone repository'){
+            steps{
+                git 'https://github.com/Tanyaconny/gallery'
+            }
+        }
+        stage('Build'){
+            steps{
+              sh 'npm install'  
+            }
+        }
+        stage('test'){
+            post{
+             failure{
+                 mail bcc: '', body: 'failed test', cc: '', from: '', replyTo: '', subject: 'Fail', to: 'consolata.wanjau@student.moringaschool.com'
+             }  
+             success{
+                 mail bcc: '', body: 'passed test', cc: '', from: '', replyTo: '', subject: 'pass', to: 'consolata.wanjau@student.moringaschool.com'
+             }
+            }
+            steps{
+                sh 'npm test'
+            }            
+        }
+        stage('deploy to heroku'){
+            steps{
+                withCredentials([usernameColonPassword(credentialsId: 'heroku1', variable: 'Tanya')]) {
+                    sh 'git push https://${Tanya}@git.heroku.com/possibleip.git master'
+                }
+            }
+        }
+        stage('slack notification'){
+            steps{
+                slackSend channel: '#tanyaip', message: "deployment to heroku successful build id ${BUILD_ID}:https://possibleip.herokuapp.com/?"
+            }
+        }
+    }
+}
